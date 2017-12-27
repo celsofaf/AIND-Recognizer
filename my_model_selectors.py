@@ -75,9 +75,32 @@ class SelectorBIC(ModelSelector):
         :return: GaussianHMM object
         """
         warnings.filterwarnings("ignore", category=DeprecationWarning)
+        
+        def BIC_score(model):
+            n = model.n_components
+            d = model.n_features
+            transition = n*(n - 1)  # num transition probabilities
+            starting = n - 1  # num starting probabilities
+            means = n*d  # num means
+            covs = n*d  # num covariances for diag array    
+            p = transition + starting + means + covs  # number of free parameters
+            N = len(self.X)  # number of data points
+            BIC = -2 * model.score(self.X, self.lengths) + p*np.log(N)
+            return BIC
 
         # TODO implement model selection based on BIC scores
-        raise NotImplementedError
+        best_score = float('+inf')
+        best_model = None
+        for n in np.arange(self.min_n_components, self.max_n_components+1):
+            try:
+                model = self.base_model(n)
+                score = BIC_score(model)
+                if score < best_score:  # here, the lower the better
+                    best_score = score
+                    best_model = model
+            except:
+                pass
+        return best_model
 
 
 class SelectorDIC(ModelSelector):
@@ -93,8 +116,30 @@ class SelectorDIC(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+        def DIC_score(model):
+            loglik_thisword = model.score(self.X, self.lengths)
+            loglik_otherwords = []
+            other_words = [w for w in self.words.keys() if w != self.this_word]
+            for word in other_words:
+                X, lenghts = self.hwords[word]
+                score = model.score(X, lenghts)
+                loglik_otherwords.append(score)
+            avg_loglik_otherwords = np.mean(loglik_otherwords)
+            return loglik_thisword - avg_loglik_otherwords
+
         # TODO implement model selection based on DIC scores
-        raise NotImplementedError
+        best_score = float('-inf')
+        best_model = None
+        for n in np.arange(self.min_n_components, self.max_n_components+1):
+            try:
+                model = self.base_model(n)
+                score = DIC_score(model)
+                if score > best_score:  # here, the higher the better
+                    best_score = score
+                    best_model = model
+            except:
+                pass
+        return best_model
 
 
 class SelectorCV(ModelSelector):
@@ -104,6 +149,25 @@ class SelectorCV(ModelSelector):
 
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings("ignore", category=RuntimeWarning)
 
         # TODO implement model selection using CV
-        raise NotImplementedError
+        best_test_score = float('-inf')
+        best_model = None
+        for n in np.arange(self.min_n_components, self.max_n_components+1):
+            try:
+                test_scores  = []
+                split_method = KFold(n_splits=min(3, len(self.sequences)), random_state=self.random_state)
+                for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
+                    X_train, lenghts_train = combine_sequences(cv_train_idx, self.sequences)
+                    X_test,  lenghts_test  = combine_sequences(cv_test_idx,  self.sequences)
+                    model = GaussianHMM(n_components=n, covariance_type="diag", n_iter=1000,
+                                        random_state=self.random_state, verbose=False).fit(X_train, lenghts_train)
+                    test_scores.append(model.score(X_test, lenghts_test))
+                test_score = np.mean(test_scores)
+                if test_score > best_test_score:  # here, the higher the better
+                    best_test_score = test_score
+                    best_model = self.base_model(n)
+            except:
+                pass
+        return best_model

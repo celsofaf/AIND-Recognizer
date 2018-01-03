@@ -18,8 +18,18 @@ def recognize(models: dict, test_set: SinglesData):
            ['WORDGUESS0', 'WORDGUESS1', 'WORDGUESS2',...]
    """
     warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+    # TODO implement the recognizer
     probabilities = []
     guesses = []
-    # TODO implement the recognizer
+    for word_id in test_set:
+        X, lengths = test_set.get_item_Xlengths(word_id)
+        scores = {}
+        for word, model in models.items():
+            scores[model] = model.score(X, lengths)
+        probabilities.append(score)
+        guess.append(argmax(score)) # WARNING: pseudocode
+    
+
     # return probabilities, guesses
-    raise NotImplementedError
+    return probabilities, guesses

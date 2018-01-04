@@ -80,11 +80,11 @@ class SelectorBIC(ModelSelector):
             n = model.n_components
             d = model.n_features
             transition = n*(n - 1)  # num transition probabilities
-            starting = n - 1  # num starting probabilities
-            means = n*d  # num means
-            covs = n*d  # num covariances for diag array    
+            starting = n - 1        # num starting probabilities
+            means = n*d             # num means
+            covs = n*d              # num covariances for diag array    
             p = transition + starting + means + covs  # number of free parameters
-            N = len(self.X)  # number of data points
+            N = len(self.X)         # number of data points
             BIC = -2 * model.score(self.X, self.lengths) + p*np.log(N)
             return BIC
 
@@ -157,6 +157,7 @@ class SelectorCV(ModelSelector):
         for n in np.arange(self.min_n_components, self.max_n_components+1):
             try:
                 test_scores  = []
+                # splits in 3 folds, unless only 1 or 2 sequences are available
                 split_method = KFold(n_splits=min(3, len(self.sequences)), random_state=self.random_state)
                 for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
                     X_train, lenghts_train = combine_sequences(cv_train_idx, self.sequences)

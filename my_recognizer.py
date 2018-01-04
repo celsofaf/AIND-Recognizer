@@ -21,6 +21,9 @@ def recognize(models: dict, test_set: SinglesData):
 
     # TODO implement the recognizer
     def argmax(d: dict):
+        '''
+        Given a dictionary of numeric values, returns the key corresponding to the max value
+        '''
         return max(zip(d.values(), d.keys()))[1]
     
     probabilities = []
@@ -31,7 +34,7 @@ def recognize(models: dict, test_set: SinglesData):
         for word, model in models.items():
             try:
                 scores[word] = model.score(X, lengths)
-            except:
+            except:  # if invalid model, or can't calculate score
                 scores[word] = float('-inf')
         probabilities.append(scores)
         guesses.append(argmax(scores))

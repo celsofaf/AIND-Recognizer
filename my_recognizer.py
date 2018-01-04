@@ -20,16 +20,21 @@ def recognize(models: dict, test_set: SinglesData):
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
     # TODO implement the recognizer
+    def argmax(d: dict):
+        return max(zip(d.values(), d.keys()))[1]
+    
     probabilities = []
     guesses = []
-    for word_id in test_set:
+    for word_id in sorted(list(test_set.get_all_Xlengths().keys())):
         X, lengths = test_set.get_item_Xlengths(word_id)
         scores = {}
         for word, model in models.items():
-            scores[model] = model.score(X, lengths)
-        probabilities.append(score)
-        guess.append(argmax(score)) # WARNING: pseudocode
+            try:
+                scores[word] = model.score(X, lengths)
+            except:
+                scores[word] = float('-inf')
+        probabilities.append(scores)
+        guesses.append(argmax(scores))
     
-
     # return probabilities, guesses
     return probabilities, guesses
